@@ -1,0 +1,22 @@
+---
+name: Compress-LZW-Progressive
+version: 0.1
+author:
+  - 'Eric Waters <ewaters@uarc.com>'
+abstract: Progressive LZW-like compression
+license: perl
+requires:
+  Devel::Size: 0
+  Test::Memory::Cycle: 0
+  Test::More: 0
+provides:
+  Compress::LZW::Progressive:
+    file: lib/Compress/LZW/Progressive.pm
+    version: 0.1
+  Compress::LZW::Progressive::Dict:
+    file: lib/Compress/LZW/Progressive/Dict.pm
+    version: 0.1
+  Compress::LZW::Progressive::Dict::Tree:
+    file: lib/Compress/LZW/Progressive/Dict.pm
+    version: 0.1
+generated_by: Module::Build version 0.24
