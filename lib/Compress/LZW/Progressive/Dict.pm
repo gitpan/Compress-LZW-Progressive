@@ -2,6 +2,7 @@ package Compress::LZW::Progressive::Dict;
 
 use strict;
 use warnings;
+use bytes;
 
 our $VERSION = '0.1';
 
@@ -170,7 +171,7 @@ sub dump {
 	print "Next Code: ".$self->{next_code}."\n";
 	print "Reuse Codes:\n" . join(", ", @{ $self->{reuse_codes} }) . "\n";
 	
-	return;
+#	return;
 	print "Tree\n";
 	$self->{tree}->print(0);
 }
@@ -180,8 +181,9 @@ package Compress::LZW::Progressive::Dict::Tree;
 use strict;
 use warnings;
 no warnings 'recursion';
+use bytes;
 
-our $VERSION = '0.1';
+our $VERSION = '0.11';
 
 sub new {
 	my ($class) = @_;
@@ -203,6 +205,7 @@ sub add {
 
 	my $char = shift @$chars;
 	if (defined $char) {
+		$char = 'null' if ord($char) == 0;
 		$self->[0]{$char} ||= $self->new();
 		$self->[0]{$char}->add($chars, $code);
 	}
@@ -218,6 +221,7 @@ sub delete {
 	my ($self, $chars) = @_;
 
 	my $char = shift @$chars;
+	$char = 'null' if defined $char && ord($char) == 0;
 
 	# Descend to the last char
 	if (defined $char && (my $child = $self->[0]{$char})) {
@@ -241,7 +245,10 @@ sub search {
 
 	my $found_desc;
 
-	if (defined $arr->[$index] && (my $child = $self->[0]{ $arr->[$index] })) {
+	my $char = $arr->[$index];
+	$char = 'null' if defined $char && ord($char) == 0;
+
+	if (defined $char && (my $child = $self->[0]{$char})) {
 		$found_desc = $child->search($index + 1, $arr);
 		return $found_desc if defined $found_desc;
 	}
@@ -256,7 +263,7 @@ sub search {
 sub print {
 	my ($self, $level) = @_;
 	
-	print ' ' . (' 'x$level) . ' => ' . $self->[1] . "\n" if $self->[1];
+	print ' ' . (' 'x$level) . ' => ' . $self->[1] . "\n" if defined $self->[1];
 	foreach my $char (sort keys %{ $self->[0] }) {
 		print ' ' . (' 'x$level) . $char . "\n";
 		$self->[0]{$char}->print($level + 1);

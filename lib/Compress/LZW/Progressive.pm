@@ -3,9 +3,9 @@ package Compress::LZW::Progressive;
 use strict;
 use warnings;
 use Compress::LZW::Progressive::Dict;
-use Devel::Size;
+use bytes;
 
-our $VERSION = '0.1';
+our $VERSION = '0.102';
 
 my @empty_dict;
 @empty_dict[0..255] = map { chr } 0..255;
@@ -65,12 +65,12 @@ sub compress {
 	my @out = ();
 
 	my @char = split //, $str;
-	while (@char) {
+	while (int @char > 0) {
 		print "Matching '".join('', @char[0..($#char > 20 ? 20 : $#char)])."'\n" if $debug;
 
 		# Find the code that matches the most of the upcoming chars
 		my $code = $dict->code_matching_array(\@char);
-		die "Must match at least a single-char phrase for any string" unless $code;
+		die "Caouldn't find code to match '".join('', @char)."'" if ! defined $code;
 
 		my $phrase = $dict->phrase($code);
 		die "Found code that has no phrase ($code)" if ! length $phrase;
@@ -210,7 +210,7 @@ sub decompress {
 			$return .= $dict->[$code] = $dp . substr($dp, 0, 1);
 			print " + '".$dict->[$code]."' from $code\n" if $debug;
 		}
-		$dict_usage->increment_code_usage_count($next_code) if $next_code;
+		$dict_usage->increment_code_usage_count($next_code) if defined $next_code;
 		$dict_usage->increment_code_usage_count($code);
 		$last_code = $code;
 	}
@@ -228,6 +228,15 @@ sub decompress {
 sub stats {
 	my ($self, $type, $phrases) = @_;
 
+	my $devel_size;
+	eval {
+		require Devel::Size;
+		$devel_size = 1;
+	};
+	if ($@) {
+		print STDERR "Devel::Size not installed so stats() will exclude data size\n";
+	}
+
 	my @return;
 
 	push @return, sprintf "Bits %d", $self->{bits};
@@ -239,8 +248,8 @@ sub stats {
 			$self->{code_max},
 			;
 		push @return, sprintf "cdict: %.2f Kb",
-			Devel::Size::total_size($self->{cdict}) / 1024,
-			;
+			Devel::Size::total_size($self->{cdict}) / 1024
+			if $devel_size;
 
 		if ($phrases) {
 			# Collect stats on phrase lengths
@@ -269,8 +278,8 @@ sub stats {
 		 	 Devel::Size::total_size($self->{ddict_reuse_codes}) + 
 			 Devel::Size::total_size($self->{ddict_usage})) / 1024,
 			$self->{dnext} - int @{ $self->{ddict_reuse_codes} },
-			$self->{code_max},
-			;
+			$self->{code_max}
+			if $devel_size;
 	}
 
 	return join("; ", @return);

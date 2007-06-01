@@ -6,6 +6,8 @@ my $build = Module::Build->new(
 	requires => {
 		'Test::Memory::Cycle' => 0,
 		'Test::More' => 0,
+	},
+	recommends => {
 		'Devel::Size' => 0,
 	},
 	sign => 1,
